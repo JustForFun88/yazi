@@ -314,6 +314,10 @@ pub(crate) struct Kgp;
 impl Kgp {
 	pub(crate) async fn image_show(path: &Path, max: Rect) -> Result<Rect> {
 		let img = Image::downscale(path, max).await?;
+		Self::draw_image(img, max).await
+	}
+
+	async fn draw_image(img: DynamicImage, max: Rect) -> Result<Rect> {
 		let area = Image::pixel_area((img.width(), img.height()), max);
 
 		let b1 = Self::encode(img).await?;
