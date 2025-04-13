@@ -50,6 +50,21 @@ impl Adapter {
 		}
 	}
 
+	pub async fn pdf_page_show(self, path: &Path, page: u16, max: Rect) -> Result<Rect> {
+		if max.is_empty() {
+			return Ok(Rect::default());
+		}
+
+		match self {
+			Self::Kgp => drivers::Kgp::image_show(path, max).await,
+			Self::KgpOld => drivers::KgpOld::image_show(path, max).await,
+			Self::Iip => drivers::Iip::image_show(path, max).await,
+			Self::Sixel => drivers::Sixel::image_show(path, max).await,
+			Self::X11 | Self::Wayland => drivers::Ueberzug::image_show(path, max).await,
+			Self::Chafa => drivers::Chafa::image_show(path, max).await,
+		}
+	}
+
 	pub fn image_hide(self) -> Result<()> {
 		if let Some(area) = SHOWN.replace(None) { self.image_erase(area) } else { Ok(()) }
 	}
