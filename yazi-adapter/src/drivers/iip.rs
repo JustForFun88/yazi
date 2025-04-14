@@ -7,13 +7,18 @@ use image::{DynamicImage, ExtendedColorType, ImageEncoder, codecs::{jpeg::JpegEn
 use ratatui::layout::Rect;
 use yazi_config::YAZI;
 
-use crate::{CLOSE, Emulator, Image, START, adapter::Adapter};
+use crate::{CLOSE, Emulator, Image, START, adapter::Adapter, pdf::PdfRenderer};
 
 pub(crate) struct Iip;
 
 impl Iip {
 	pub(crate) async fn image_show(path: &Path, max: Rect) -> Result<Rect> {
 		let img = Image::downscale(path, max).await?;
+		Self::draw_image(img, max).await
+	}
+
+	pub(crate) async fn pdf_page_show(path: &Path, page: u16, max: Rect) -> Result<Rect> {
+		let img = PdfRenderer::downscale(path, page, max).await?;
 		Self::draw_image(img, max).await
 	}
 

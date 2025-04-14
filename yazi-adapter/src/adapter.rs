@@ -56,12 +56,12 @@ impl Adapter {
 		}
 
 		match self {
-			Self::Kgp => drivers::Kgp::image_show(path, max).await,
-			Self::KgpOld => drivers::KgpOld::image_show(path, max).await,
-			Self::Iip => drivers::Iip::image_show(path, max).await,
-			Self::Sixel => drivers::Sixel::image_show(path, max).await,
-			Self::X11 | Self::Wayland => drivers::Ueberzug::image_show(path, max).await,
-			Self::Chafa => drivers::Chafa::image_show(path, max).await,
+			Self::Kgp => drivers::Kgp::pdf_page_show(path,page, max).await,
+			Self::KgpOld => drivers::KgpOld::pdf_page_show(path, page,max).await,
+			Self::Iip => drivers::Iip::pdf_page_show(path, page,max).await,
+			Self::Sixel => drivers::Sixel::pdf_page_show(path, page,max).await,
+			Self::X11 | Self::Wayland => drivers::Ueberzug::pdf_page_show(path, page,max).await,
+			Self::Chafa => drivers::Chafa::pdf_page_show(path, page,max).await,
 		}
 	}
 

@@ -41,6 +41,10 @@ pub fn compose(lua: &Lua, isolate: bool) -> mlua::Result<Value> {
 			b"dbg" => Utils::dbg(lua)?,
 			b"err" => Utils::err(lua)?,
 
+			// PDF
+			b"pdf_page_show" => Utils::pdf_page_show(lua)?,
+			b"pdf_page_precache" => Utils::pdf_page_precache(lua)?,
+
 			// Preview
 			b"preview_code" => Utils::preview_code(lua)?,
 			b"preview_widgets" => Utils::preview_widgets(lua)?,

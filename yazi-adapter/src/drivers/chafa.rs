@@ -6,7 +6,7 @@ use crossterm::{cursor::MoveTo, queue};
 use ratatui::layout::Rect;
 use tokio::process::Command;
 
-use crate::{Adapter, Emulator};
+use crate::{Adapter, Emulator, pdf::PdfRenderer, office::TempFile};
 
 pub(crate) struct Chafa;
 
@@ -62,6 +62,12 @@ impl Chafa {
 			}
 			Ok(area)
 		})
+	}
+
+	pub(crate) async fn pdf_page_show(path: &Path, page: u16, max: Rect) -> Result<Rect> {
+		let temp_file = TempFile::from_path(path);
+		PdfRenderer::precache(path, page, temp_file.as_ref().to_path_buf()).await?;
+		Self::image_show(temp_file.as_ref(), max).await
 	}
 
 	pub(crate) fn image_erase(area: Rect) -> Result<()> {

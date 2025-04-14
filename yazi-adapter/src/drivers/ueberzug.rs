@@ -8,7 +8,7 @@ use tracing::{debug, warn};
 use yazi_config::YAZI;
 use yazi_shared::{LOG_LEVEL, RoCell, env_exists};
 
-use crate::{Adapter, Dimension};
+use crate::{Adapter, Dimension, pdf::PdfRenderer, office::TempFile};
 
 type Cmd = Option<(PathBuf, Rect)>;
 
@@ -65,6 +65,12 @@ impl Ueberzug {
 		tx.send(Some((path.to_owned(), area)))?;
 		Adapter::shown_store(area);
 		Ok(area)
+	}
+
+	pub(crate) async fn pdf_page_show(path: &Path, page: u16, max: Rect) -> Result<Rect> {
+		let temp_file = TempFile::from_path(path);
+		PdfRenderer::precache(path, page, temp_file.as_ref().to_path_buf()).await?;
+		Self::image_show(temp_file.as_ref(), max).await
 	}
 
 	pub(crate) fn image_erase(_: Rect) -> Result<()> {

@@ -7,7 +7,7 @@ use crossterm::{cursor::MoveTo, queue};
 use image::DynamicImage;
 use ratatui::layout::Rect;
 
-use crate::{CLOSE, ESCAPE, Emulator, START, adapter::Adapter, image::Image};
+use crate::{CLOSE, ESCAPE, Emulator, START, adapter::Adapter, image::Image, pdf::PdfRenderer};
 
 static DIACRITICS: [char; 297] = [
 	'\u{0305}',
@@ -314,6 +314,11 @@ pub(crate) struct Kgp;
 impl Kgp {
 	pub(crate) async fn image_show(path: &Path, max: Rect) -> Result<Rect> {
 		let img = Image::downscale(path, max).await?;
+		Self::draw_image(img, max).await
+	}
+
+	pub(crate) async fn pdf_page_show(path: &Path, page: u16, max: Rect) -> Result<Rect> {
+		let img = PdfRenderer::downscale(path, page, max).await?;
 		Self::draw_image(img, max).await
 	}
 

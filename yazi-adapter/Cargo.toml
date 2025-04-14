@@ -25,7 +25,8 @@ scopeguard  = { workspace = true }
 tokio       = { workspace = true }
 futures     = { workspace = true }
 tracing     = { workspace = true }
-pdfium-render = "0.8.30"
+twox-hash   = { workspace = true }
+pdfium-render = { version = "0.8.30", features = [ "static", "thread_safe" ] }
 office-convert-client = "0.2.0"
 libreofficekit = "0.4.0"
 rand = "0.9.0"

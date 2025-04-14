@@ -181,6 +181,8 @@ use anyhow::{Context, Result, anyhow};
 use libreofficekit::{DocUrl, Office, OfficeError};
 use rand::{Rng, distr::Alphanumeric};
 use tokio::{sync::oneshot, time::timeout};
+use twox_hash::XxHash3_128;
+use yazi_config::YAZI;
 
 /// Пул worker'ов для конвертации документов
 pub struct OfficePool {
@@ -294,14 +296,7 @@ impl WorkerHandle {
 		};
 
 		// Generate random ID for the path name
-		let random_id = rand::rng()
-			.sample_iter(&Alphanumeric)
-			.take(10)
-			.map(|value| value as char)
-			.collect::<String>();
-
-		let temp_output =
-			TempFile { path: std::env::temp_dir().join(format!("lo_output_{random_id}.pdf")) };
+		let temp_output = TempFile::new();
 
 		// Инициализация прошла успешно
 		let _ = init_sender.send(Ok(()));
@@ -345,8 +340,31 @@ impl Drop for WorkerHandle {
 	}
 }
 
-struct TempFile {
+pub(crate) struct TempFile {
 	path: PathBuf,
+}
+
+impl TempFile {
+	pub(crate) fn new() -> Self {
+		let random_id = rand::rng()
+			.sample_iter(&Alphanumeric)
+			.take(10)
+			.map(|value| value as char)
+			.collect::<String>();
+
+		TempFile { path: std::env::temp_dir().join(format!("lo_output_{random_id}.pdf")) }
+	}
+
+	pub(crate) fn from_path(file_path: &Path) -> Self {
+		let hex = {
+			let mut hasher = XxHash3_128::new();
+			hasher.write(file_path.as_os_str().as_encoded_bytes());
+			hasher.write(format!("//{:?}", std::time::Instant::now()).as_bytes());
+			format!("{:x}", hasher.finish_128())
+		};
+
+		TempFile { path: YAZI.preview.cache_dir.join(hex) }
+	}
 }
 
 impl Drop for TempFile {

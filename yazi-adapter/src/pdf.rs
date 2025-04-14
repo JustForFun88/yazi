@@ -33,7 +33,7 @@ impl PdfRenderer {
 		Ok(tokio::fs::write(cache, buf).await?)
 	}
 
-	pub async fn downscale(path: &Path, rect: Rect, page: u16) -> Result<DynamicImage> {
+	pub async fn downscale(path: &Path, page: u16, rect: Rect) -> Result<DynamicImage> {
 		let (w, h) = Image::max_pixel(rect);
 		let path = path.to_path_buf();
 
@@ -57,7 +57,7 @@ impl PdfRenderer {
 		let target_ratio = page.width().to_inches() / page.height().to_inches();
 
 		let mut render_config = PdfRenderConfig::new();
-		if max_width as f32 / max_height as f32 > target_ratio {
+		if (max_width as f32 / max_height as f32) < target_ratio {
 			render_config = render_config.set_target_width(max_width as i32);
 		} else {
 			render_config = render_config.set_target_height(max_height as i32);
