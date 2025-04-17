@@ -1,7 +1,9 @@
+use std::ops::Deref;
+
 use mlua::{Function, IntoLua, Lua, Value};
 use yazi_adapter::{ADAPTOR, PdfRenderer};
 use yazi_binding::UrlRef;
-use std::ops::{Deref, DerefMut};
+
 use super::Utils;
 use crate::elements::Rect;
 
@@ -28,7 +30,7 @@ impl Utils {
 
 	pub(super) fn pdf_page_precache(lua: &Lua) -> mlua::Result<Function> {
 		lua.create_async_function(|_, (src, page, dist): (UrlRef, u16, UrlRef)| async move {
-			Ok(PdfRenderer::precache(dbg!(src.deref().deref()), dbg!(page), dbg!(dist.to_path_buf())).await.is_ok())
+			Ok(PdfRenderer::precache(src.deref().deref(), page, dist.to_path_buf()).await.is_ok())
 		})
 	}
 }

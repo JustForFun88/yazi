@@ -1,11 +1,11 @@
-use std::{env, fmt::Display, path::Path};
+use std::{env, fmt::Display, io::Write, path::Path};
 
 use anyhow::Result;
 use ratatui::layout::Rect;
 use tracing::warn;
 use yazi_shared::env_exists;
 
-use crate::{Brand, Emulator, SHOWN, TMUX, WSL, drivers};
+use crate::{Brand, Emulator, SHOWN, TMUX, WSL, drivers, pdf::ACCESS_FILE};
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub enum Adapter {
@@ -51,17 +51,24 @@ impl Adapter {
 	}
 
 	pub async fn pdf_page_show(self, path: &Path, page: u16, max: Rect) -> Result<Rect> {
+		// let mut file = ACCESS_FILE.lock().unwrap();
+		// let _ = write!(file, "Adapter::pdf_page_show\n\n");
+		// let _ = write!(file, "	path.to_str(): {:?}\n\n", path.to_str());
 		if max.is_empty() {
 			return Ok(Rect::default());
 		}
-
+		// let _ = write!(file, "	Page: {:?}\n\n	Rect: {:?}\n\n", page, max);
+		// let _ = write!(file, "	Adapter: {:?}\n\n", self);
 		match self {
-			Self::Kgp => drivers::Kgp::pdf_page_show(path,page, max).await,
-			Self::KgpOld => drivers::KgpOld::pdf_page_show(path, page,max).await,
-			Self::Iip => drivers::Iip::pdf_page_show(path, page,max).await,
-			Self::Sixel => drivers::Sixel::pdf_page_show(path, page,max).await,
-			Self::X11 | Self::Wayland => drivers::Ueberzug::pdf_page_show(path, page,max).await,
-			Self::Chafa => drivers::Chafa::pdf_page_show(path, page,max).await,
+			Self::Kgp => drivers::Kgp::pdf_page_show(path, page, max).await,
+			Self::KgpOld => drivers::KgpOld::pdf_page_show(path, page, max).await,
+			Self::Iip => {
+				// let _ = write!(file, "	Calling drivers::Iip::pdf_page_show(path, page, max)\n\n");
+				drivers::Iip::pdf_page_show(path, page, max).await
+			}
+			Self::Sixel => drivers::Sixel::pdf_page_show(path, page, max).await,
+			Self::X11 | Self::Wayland => drivers::Ueberzug::pdf_page_show(path, page, max).await,
+			Self::Chafa => drivers::Chafa::pdf_page_show(path, page, max).await,
 		}
 	}
 

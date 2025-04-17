@@ -19,11 +19,11 @@ local M = {}
 function M:peek(job)
 	local start, url = os.clock(), ya.file_cache(job)
 	ya.sleep(math.max(0, rt.preview.image_delay / 1000 + start - os.clock()))
-	if not url or not fs.cha(url) then
-		ya.pdf_page_show(job.file.url, job.skip + 1, job.area)
-	else
-		ya.image_show(url, job.area)
-	end
+	-- if not url or not fs.cha(url) then
+	ya.pdf_page_show(job.file.url, job.skip, job.area)
+	-- else
+		-- ya.image_show(url, job.area)
+	-- end
 
 	ya.preview_widgets(job, {})
 end
@@ -75,14 +75,14 @@ end
 -- end
 
 function M:preload(job)
-	ya.dbg("job", job)
-	local cache = ya.file_cache(job)
-	ya.dbg("cache", cache)
-	if not cache or fs.cha(cache) then
-		return true
-	end
+	-- ya.dbg("job", job)
+	-- local cache = ya.file_cache(job)
+	-- ya.dbg("cache", cache)
+	-- if not cache or fs.cha(cache) then
+	-- 	return true
+	-- end
 
-	return ya.pdf_page_precache(job.file.url, job.skip + 0, cache)
+	-- return ya.pdf_page_precache(job.file.url, job.skip + 0, cache)
 end
 
 return M

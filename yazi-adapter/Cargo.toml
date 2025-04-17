@@ -26,10 +26,22 @@ tokio       = { workspace = true }
 futures     = { workspace = true }
 tracing     = { workspace = true }
 twox-hash   = { workspace = true }
-pdfium-render = { version = "0.8.30", features = [ "static", "thread_safe" ] }
+# pdfium-render = { version = "0.8.30", features = [ "static", "thread_safe" ] }
+# poppler-rs = { path = "D:/Rust/poppler-rs/poppler", default-features = false, features = ["v23_8"] }
 office-convert-client = "0.2.0"
 libreofficekit = "0.4.0"
 rand = "0.9.0"
+cairo-rs = "0.20.7"
+poppler-rs = "0.24.1"
+
+# [dependencies.cairo-sys-rs]
+# version = "0.21"
+# branch = "main"
+# git = "https://github.com/gtk-rs/gtk-rs-core"
+
+# [dependencies.mupdf]
+# git = "https://github.com/messense/mupdf-rs.git"
+# branch = "main"
 
 [target.'cfg(target_os = "macos")'.dependencies]
 crossterm = { workspace = true, features = [ "use-dev-tty", "libc" ] }
