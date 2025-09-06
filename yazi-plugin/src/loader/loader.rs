@@ -41,6 +41,7 @@ impl Default for Loader {
 			("mime".to_owned(), preset!("plugins/mime").into()),
 			("noop".to_owned(), preset!("plugins/noop").into()),
 			("pdf".to_owned(), preset!("plugins/pdf").into()),
+			("poppdf".to_owned(), preset!("plugins/poppdf").into()),
 			("session".to_owned(), preset!("plugins/session").into()),
 			("svg".to_owned(), preset!("plugins/svg").into()),
 			("video".to_owned(), preset!("plugins/video").into()),

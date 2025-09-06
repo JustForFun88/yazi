@@ -6,7 +6,7 @@ use crossterm::{cursor::MoveTo, queue};
 use ratatui::layout::Rect;
 use tokio::process::Command;
 
-use crate::{Adapter, Emulator};
+use crate::{Adapter, Emulator, pdf::PdfRenderer};
 
 pub(crate) struct Chafa;
 

@@ -27,6 +27,8 @@ pub fn compose(lua: &Lua, isolate: bool) -> mlua::Result<Value> {
 			b"image_show" => Utils::image_show(lua)?,
 			b"image_precache" => Utils::image_precache(lua)?,
 
+			b"pdf_page_show" => panic!(),
+
 			// JSON
 			b"json_encode" => Utils::json_encode(lua)?,
 			b"json_decode" => Utils::json_decode(lua)?,

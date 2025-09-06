@@ -8,7 +8,7 @@ use tracing::{debug, warn};
 use yazi_config::YAZI;
 use yazi_shared::{LOG_LEVEL, RoCell, env_exists};
 
-use crate::{Adapter, Dimension};
+use crate::{Adapter, Dimension, pdf::PdfRenderer};
 
 type Cmd = Option<(PathBuf, Rect)>;
 
