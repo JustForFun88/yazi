@@ -7,13 +7,22 @@ use palette::{Srgb, cast::ComponentsAs};
 use quantette::{ColorSlice, PaletteSize, QuantizeOutput, wu::UIntBinner};
 use ratatui::layout::Rect;
 
-use crate::{CLOSE, ESCAPE, Emulator, Image, START, adapter::Adapter};
+use crate::{CLOSE, ESCAPE, Emulator, Image, START, adapter::Adapter, pdf::PdfRenderer};
 
 pub(crate) struct Sixel;
 
 impl Sixel {
 	pub(crate) async fn image_show(path: PathBuf, max: Rect) -> Result<Rect> {
 		let img = Image::downscale(path, max).await?;
+		Self::draw_image(img, max).await
+	}
+
+	pub(crate) async fn pdf_page_show(path: &Path, page: u16, max: Rect) -> Result<Rect> {
+		let img = PdfRenderer::downscale_page(path, page, max).await?;
+		Self::draw_image(img, max).await
+	}
+
+	async fn draw_image(img: DynamicImage, max: Rect) -> Result<Rect> {
 		let area = Image::pixel_area((img.width(), img.height()), max);
 		let b = Self::encode(img).await?;
 

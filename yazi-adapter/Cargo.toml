@@ -27,6 +27,7 @@ ratatui     = { workspace = true }
 scopeguard  = { workspace = true }
 tokio       = { workspace = true }
 tracing     = { workspace = true }
+pdfium-render = { version = "0.8.35", features = ["sync"] }
 
 [target.'cfg(target_os = "macos")'.dependencies]
 crossterm = { workspace = true, features = [ "use-dev-tty", "libc" ] }

@@ -44,6 +44,7 @@ impl Default for Loader {
 			("mime.remote".to_owned(), preset!("plugins/mime-remote").into()),
 			("noop".to_owned(), preset!("plugins/noop").into()),
 			("pdf".to_owned(), preset!("plugins/pdf").into()),
+			("pdf2".to_owned(), preset!("plugins/pdf2").into()),
 			("session".to_owned(), preset!("plugins/session").into()),
 			("svg".to_owned(), preset!("plugins/svg").into()),
 			("vfs".to_owned(), preset!("plugins/vfs").into()),
