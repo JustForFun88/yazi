@@ -1,6 +1,6 @@
-use std::path::Path;
+use std::{path::{Path, PathBuf}, time::SystemTime};
 
-use anyhow::{Result, anyhow};
+use anyhow::{Context, Result, anyhow};
 use image::{DynamicImage, ExtendedColorType, ImageBuffer, ImageEncoder, codecs::png::PngEncoder};
 use pdfium_render::prelude::*;
 use ratatui::layout::Rect;
@@ -53,10 +53,10 @@ impl PdfRenderer {
 		max_height: u32,
 	) -> Result<DynamicImage> {
 		let page = document.pages().get(page % document.pages().len())?;
-		let target_ratio = page.width().to_inches() / page.height().to_inches();
+		let page_ratio = page.width().to_inches() / page.height().to_inches();
 
 		let mut render_config = PdfRenderConfig::new();
-		if max_width as f32 / max_height as f32 > target_ratio {
+		if page_ratio > (max_width as f32 / max_height as f32) {
 			render_config = render_config.set_target_width(max_width as i32);
 		} else {
 			render_config = render_config.set_target_height(max_height as i32);
@@ -73,3 +73,20 @@ impl PdfRenderer {
 			.ok_or_else(|| anyhow!("Failed to create ImageBuffer from PdfBitmap"))
 	}
 }
+
+#[derive(Debug, Clone, Copy)]
+struct FileSignature {
+	len:        u64,
+	mtime_secs: i64,
+}
+
+// impl FileSignature {
+// 	fn from_path(path: &Path) -> Result<Self> {
+// 		let meta =
+// 			std::fs::metadata(path).with_context(|| format!("metadata failed for {}", path.display()))?;
+// 		let len = meta.len();
+// 		let mtime = meta.modified().unwrap_or(SystemTime::now());
+// 		let mtime_secs = OffsetDateTime::from(mtime).unix_timestamp();
+// 		Ok(Self { len, mtime_secs })
+// 	}
+// }

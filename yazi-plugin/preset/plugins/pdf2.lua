@@ -2,7 +2,7 @@ local M = {}
 
 function M:peek(job)
 	local start = os.clock()
-	ya.sleep(math.max(0, rt.preview.image_delay / 1000 + start - os.clock()))
+	ya.sleep(math.max(0, math.min(rt.preview.image_delay, 10) / 1000 + start - os.clock()))
 	local _, err = ya.pdf_page_show(job.file.url, job.skip, job.area)
 	ya.preview_widget(job, err)
 end
