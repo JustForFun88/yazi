@@ -1,4 +1,4 @@
-use std::{path::{Path, PathBuf}, time::SystemTime};
+use std::{path::Path, sync::{LazyLock, Mutex}};
 
 use anyhow::{Context, Result, anyhow};
 use image::{DynamicImage, ExtendedColorType, ImageBuffer, ImageEncoder, codecs::png::PngEncoder};
@@ -9,6 +9,8 @@ use yazi_fs::provider::{Provider, local::Local};
 
 use crate::Image;
 
+static PDFIUM: LazyLock<Mutex<Pdfium>> = LazyLock::new(|| Mutex::new(Pdfium::default()));
+
 pub struct PdfRenderer;
 
 impl PdfRenderer {
@@ -16,22 +18,30 @@ impl PdfRenderer {
 		let path = path.to_path_buf();
 
 		let buf = tokio::task::spawn_blocking(move || {
-			let pdfium = Pdfium::default();
-
-			let document = pdfium.load_pdf_from_file(&path, None)?;
-			let page =
-				Self::render_page(document, page, YAZI.preview.max_width, YAZI.preview.max_height)?;
+			let img = {
+				let pdfium = PDFIUM.lock().map_err(|e| anyhow!("failed to lock global Pdfium: {e}"))?;
+				let document = pdfium
+					.load_pdf_from_file(&path, None)
+					.with_context(|| format!("failed to open PDF: {}", path.display()))?;
+				Self::render_page(document, page, YAZI.preview.max_width, YAZI.preview.max_height)
+					.with_context(|| format!("failed to render page {}", page))?
+			};
 
 			let mut buf = Vec::new();
-			let rgba = page.into_rgba8();
-			let encoder = PngEncoder::new(&mut buf);
-			encoder.write_image(&rgba, rgba.width(), rgba.height(), ExtendedColorType::Rgba8)?;
-
+			let rgba = img.into_rgba8();
+			PngEncoder::new(&mut buf)
+				.write_image(&rgba, rgba.width(), rgba.height(), ExtendedColorType::Rgba8)
+				.context("failed to encode PNG")?;
 			Ok::<_, anyhow::Error>(buf)
 		})
-		.await??;
+		.await
+		.context("blocking task join error")??;
 
-		Ok(Local.write(cache, buf).await?)
+		Local
+			.write(cache, buf)
+			.await
+			.with_context(|| format!("failed to write cache file: {}", cache.display()))?;
+		Ok(())
 	}
 
 	pub async fn downscale_page(path: &Path, page: u16, rect: Rect) -> Result<DynamicImage> {
@@ -39,11 +49,15 @@ impl PdfRenderer {
 		let path = path.to_path_buf();
 
 		tokio::task::spawn_blocking(move || {
-			let pdfium = Pdfium::default();
-			let document = pdfium.load_pdf_from_file(&path, None)?;
+			let pdfium = PDFIUM.lock().map_err(|e| anyhow!("failed to lock global Pdfium: {e}"))?;
+			let document = pdfium
+				.load_pdf_from_file(&path, None)
+				.with_context(|| format!("failed to open PDF: {}", path.display()))?;
 			Self::render_page(document, page, w, h)
+				.with_context(|| format!("failed to render page {}", page))
 		})
-		.await?
+		.await
+		.context("blocking task join error")?
 	}
 
 	pub fn render_page<'a>(
@@ -52,17 +66,24 @@ impl PdfRenderer {
 		max_width: u32,
 		max_height: u32,
 	) -> Result<DynamicImage> {
-		let page = document.pages().get(page % document.pages().len())?;
-		let page_ratio = page.width().to_inches() / page.height().to_inches();
+		anyhow::ensure!(max_width > 0 && max_height > 0, "invalid max size: {max_width}x{max_height}");
 
-		let mut render_config = PdfRenderConfig::new();
-		if page_ratio > (max_width as f32 / max_height as f32) {
-			render_config = render_config.set_target_width(max_width as i32);
+		let pages = document.pages();
+		let len = pages.len();
+		anyhow::ensure!(len > 0, "PDF has no pages");
+
+		let page = pages.get(page % len)?;
+		let height_inches = page.height().to_inches();
+		anyhow::ensure!(height_inches > 0.0, "page height is zero");
+
+		let page_ratio = page.width().to_inches() / height_inches;
+		let render_config = if page_ratio > max_width as f32 / max_height as f32 {
+			PdfRenderConfig::new().set_target_width(max_width as i32)
 		} else {
-			render_config = render_config.set_target_height(max_height as i32);
-		}
+			PdfRenderConfig::new().set_target_height(max_height as i32)
+		};
 
-		let pdf_bitmap = page.render_with_config(&render_config)?;
+		let pdf_bitmap = page.render_with_config(&render_config).context("failed to render bitmap")?;
 
 		let rgba_bytes = pdf_bitmap.as_rgba_bytes();
 		let width = pdf_bitmap.width() as u32;
@@ -83,8 +104,8 @@ struct FileSignature {
 // impl FileSignature {
 // 	fn from_path(path: &Path) -> Result<Self> {
 // 		let meta =
-// 			std::fs::metadata(path).with_context(|| format!("metadata failed for {}", path.display()))?;
-// 		let len = meta.len();
+// 			std::fs::metadata(path).with_context(|| format!("metadata failed for {}",
+// path.display()))?; 		let len = meta.len();
 // 		let mtime = meta.modified().unwrap_or(SystemTime::now());
 // 		let mtime_secs = OffsetDateTime::from(mtime).unix_timestamp();
 // 		Ok(Self { len, mtime_secs })
