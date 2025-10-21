@@ -40,8 +40,11 @@ pub fn compose(
 			b"err" => Utils::err(lua)?,
 
 			// PDF
-			b"pdf_page_show" => Utils::pdf_page_show(lua)?,
-			b"pdf_page_precache" => Utils::pdf_page_precache(lua)?,
+			b"pdfium_pdf_page_show" => Utils::pdfium_pdf_page_show(lua)?,
+			b"pdfium_pdf_page_precache" => Utils::pdfium_pdf_page_precache(lua)?,
+
+			b"hayro_pdf_page_show" => Utils::hayro_pdf_page_show(lua)?,
+			b"hayro_pdf_page_precache" => Utils::hayro_pdf_page_precache(lua)?,
 
 			// Preview
 			b"preview_code" => Utils::preview_code(lua)?,

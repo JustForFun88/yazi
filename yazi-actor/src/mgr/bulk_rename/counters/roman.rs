@@ -138,7 +138,6 @@ fn write_number_as_letters<const UPPERCASE: bool>(
 			while num >= value {
 				vec_buf.extend(roman.chars());
 				num -= value;
-				length += roman.len();
 			}
 		}
 

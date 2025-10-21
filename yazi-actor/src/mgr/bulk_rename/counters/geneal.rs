@@ -77,7 +77,6 @@ pub(super) fn write_number_as_letters_gen(
 			let remainder = (num - 1) % alphabet_len;
 			vec_buf.push(convert_fn(remainder));
 			num = (num - remainder - 1) / alphabet_len;
-			written_len += 1;
 		}
 
 		for _ in vec_buf.len()..width {

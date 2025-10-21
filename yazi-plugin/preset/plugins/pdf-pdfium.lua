@@ -3,7 +3,7 @@ local M = {}
 function M:peek(job)
 	local start = os.clock()
 	ya.sleep(math.max(0, math.min(rt.preview.image_delay, 10) / 1000 + start - os.clock()))
-	local _, err = ya.pdf_page_show(job.file.url, job.skip, job.area)
+	local _, err = ya.pdfium_pdf_page_show(job.file.url, job.skip, job.area)
 	ya.preview_widget(job, err)
 end
 
@@ -21,7 +21,7 @@ function M:preload(job)
 		return true
 	end
 
-	return ya.pdf_page_precache(job.file.url, job.skip, cache)
+	return ya.pdfium_pdf_page_precache(job.file.url, job.skip, cache)
 end
 
 return M

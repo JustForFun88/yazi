@@ -1,6 +1,6 @@
 use std::{env, fmt::Display, path::PathBuf};
 
-use anyhow::Result;
+use anyhow::{Result, anyhow};
 use ratatui::layout::Rect;
 use tracing::warn;
 use yazi_shared::env_exists;
@@ -54,18 +54,45 @@ impl Adapter {
 		}
 	}
 
-	pub async fn pdf_page_show(self, path: &Path, page: u16, max: Rect) -> Result<Rect> {
+	pub async fn pdfium_pdf_page_show<P>(self, path: P, page: u16, max: Rect) -> Result<Rect>
+	where
+		P: Into<PathBuf>,
+	{
 		if max.is_empty() {
 			return Ok(Rect::default());
 		}
 
+		let path = path.into();
 		match self {
-			Self::Kgp => drivers::Kgp::pdf_page_show(path, page, max).await,
-			Self::KgpOld => drivers::KgpOld::pdf_page_show(path, page, max).await,
-			Self::Iip => drivers::Iip::pdf_page_show(path, page, max).await,
-			Self::Sixel => drivers::Sixel::pdf_page_show(path, page, max).await,
-			Self::X11 | Self::Wayland => unimplemented!(),
-			Self::Chafa => unimplemented!(),
+			Self::Kgp => drivers::Kgp::pdfium_pdf_page_show(path, page, max).await,
+			Self::KgpOld => drivers::KgpOld::pdfium_pdf_page_show(path, page, max).await,
+			Self::Iip => drivers::Iip::pdfium_pdf_page_show(path, page, max).await,
+			Self::Sixel => drivers::Sixel::pdfium_pdf_page_show(path, page, max).await,
+			Self::X11 | Self::Wayland => {
+				Err(anyhow!("This adapter could not be used to preview pdf files"))
+			}
+			Self::Chafa => Err(anyhow!("This adapter could not be used to preview pdf files")),
+		}
+	}
+
+	pub async fn hayro_pdf_page_show<P>(self, path: P, page: u16, max: Rect) -> Result<Rect>
+	where
+		P: Into<PathBuf>,
+	{
+		if max.is_empty() {
+			return Ok(Rect::default());
+		}
+
+		let path = path.into();
+		match self {
+			Self::Kgp => drivers::Kgp::hayro_pdf_page_show(path, page, max).await,
+			Self::KgpOld => drivers::KgpOld::hayro_pdf_page_show(path, page, max).await,
+			Self::Iip => drivers::Iip::hayro_pdf_page_show(path, page, max).await,
+			Self::Sixel => drivers::Sixel::hayro_pdf_page_show(path, page, max).await,
+			Self::X11 | Self::Wayland => {
+				Err(anyhow!("This adapter could not be used to preview pdf files"))
+			}
+			Self::Chafa => Err(anyhow!("This adapter could not be used to preview pdf files")),
 		}
 	}
 

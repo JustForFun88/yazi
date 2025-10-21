@@ -8,7 +8,7 @@ use image::DynamicImage;
 use ratatui::layout::Rect;
 use yazi_shared::SyncCell;
 
-use crate::{CLOSE, ESCAPE, Emulator, START, adapter::Adapter, image::Image, pdf::PdfRenderer};
+use crate::{CLOSE, ESCAPE, Emulator, START, adapter::Adapter, image::Image, pdf::{HayroPdf, PdfiumPdf}};
 
 static DIACRITICS: [char; 297] = [
 	'\u{0305}',
@@ -318,8 +318,13 @@ impl Kgp {
 		Self::draw_image(img, max).await
 	}
 
-	pub(crate) async fn pdf_page_show(path: &Path, page: u16, max: Rect) -> Result<Rect> {
-		let img = PdfRenderer::downscale_page(path, page, max).await?;
+	pub(crate) async fn pdfium_pdf_page_show(path: PathBuf, page: u16, max: Rect) -> Result<Rect> {
+		let img = PdfiumPdf::downscale_page(path, page, max).await?;
+		Self::draw_image(img, max).await
+	}
+
+	pub(crate) async fn hayro_pdf_page_show(path: PathBuf, page: u16, max: Rect) -> Result<Rect> {
+		let img = HayroPdf::downscale_page(path, page, max).await?;
 		Self::draw_image(img, max).await
 	}
 

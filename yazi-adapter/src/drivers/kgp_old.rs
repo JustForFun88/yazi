@@ -7,7 +7,7 @@ use image::DynamicImage;
 use ratatui::layout::Rect;
 use yazi_term::tty::TTY;
 
-use crate::{CLOSE, ESCAPE, Emulator, Image, START, adapter::Adapter, pdf::PdfRenderer};
+use crate::{CLOSE, ESCAPE, Emulator, Image, START, adapter::Adapter, pdf::{HayroPdf, PdfiumPdf}};
 
 pub(crate) struct KgpOld;
 
@@ -17,8 +17,13 @@ impl KgpOld {
 		Self::draw_image(img, max).await
 	}
 
-	pub(crate) async fn pdf_page_show(path: &Path, page: u16, max: Rect) -> Result<Rect> {
-		let img = PdfRenderer::downscale_page(path, page, max).await?;
+	pub(crate) async fn pdfium_pdf_page_show(path: PathBuf, page: u16, max: Rect) -> Result<Rect> {
+		let img = PdfiumPdf::downscale_page(path, page, max).await?;
+		Self::draw_image(img, max).await
+	}
+
+	pub(crate) async fn hayro_pdf_page_show(path: PathBuf, page: u16, max: Rect) -> Result<Rect> {
+		let img = HayroPdf::downscale_page(path, page, max).await?;
 		Self::draw_image(img, max).await
 	}
 
