@@ -31,6 +31,7 @@ pdfium-render = { version = "0.8.35", features = ["sync"] }
 hayro = { git = "https://github.com/LaurenzV/hayro.git", rev = "3c6de1b" }
 hayro-interpret = { git = "https://github.com/LaurenzV/hayro.git", rev = "3c6de1b" }
 fontdb = "0.23.0"
+font-kit = "0.14.3"
 
 [target.'cfg(target_os = "macos")'.dependencies]
 crossterm = { workspace = true, features = [ "use-dev-tty", "libc" ] }

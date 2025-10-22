@@ -127,7 +127,7 @@ pub static GLOBAL_FONT_DB: LazyLock<RwLock<Arc<fontdb::Database>>> =
 
 /// This is the callback function that hayro will use to find fonts.
 /// It works by querying the global fontdb.
-fn hayro_font_resolver(query: &FontQuery) -> Option<(FontData, u32)> {
+fn fontdb_font_resolver(query: &FontQuery) -> Option<(FontData, u32)> {
 	// 1. Get a read-lock on the global font database
 	let fontdb = GLOBAL_FONT_DB.read().ok()?;
 
@@ -195,7 +195,7 @@ fn standard_font_query(std_font: StandardFont) -> Query<'static> {
 		HelveticaOblique => (
 			&[Family::Name("Helvetica"), Family::Name("Arial"), Family::Name("Liberation Sans")],
 			Weight::NORMAL,
-			Style::Italic
+			Style::Italic,
 		),
 		HelveticaBold => (
 			&[Family::Name("Helvetica"), Family::Name("Arial"), Family::Name("Liberation Sans")],
@@ -205,7 +205,7 @@ fn standard_font_query(std_font: StandardFont) -> Query<'static> {
 		HelveticaBoldOblique => (
 			&[Family::Name("Helvetica"), Family::Name("Arial"), Family::Name("Liberation Sans")],
 			Weight::BOLD,
-			Style::Italic
+			Style::Italic,
 		),
 
 		// Courier family → allow Courier New/Liberation Mono
@@ -217,7 +217,7 @@ fn standard_font_query(std_font: StandardFont) -> Query<'static> {
 		CourierOblique => (
 			&[Family::Name("Courier New"), Family::Name("Courier"), Family::Name("Liberation Mono")],
 			Weight::NORMAL,
-			Style::Italic
+			Style::Italic,
 		),
 		CourierBold => (
 			&[Family::Name("Courier New"), Family::Name("Courier"), Family::Name("Liberation Mono")],
@@ -227,7 +227,7 @@ fn standard_font_query(std_font: StandardFont) -> Query<'static> {
 		CourierBoldOblique => (
 			&[Family::Name("Courier New"), Family::Name("Courier"), Family::Name("Liberation Mono")],
 			Weight::BOLD,
-			Style::Italic
+			Style::Italic,
 		),
 
 		// Symbol & ZapfDingbats (names differ across OSes)
@@ -258,5 +258,236 @@ fn convert_stretch(stretch: HayroStretch) -> Stretch {
 		HayroStretch::Expanded => Stretch::Expanded,
 		HayroStretch::ExtraExpanded => Stretch::ExtraExpanded,
 		HayroStretch::UltraExpanded => Stretch::UltraExpanded,
+	}
+}
+
+use font_kit::{
+	family_name::FamilyName,
+	handle::Handle,
+	properties::{Properties, Stretch as FkStretch, Style as FkStyle, Weight as FkWeight},
+	source::SystemSource,
+};
+
+pub fn make_interpreter_settings() -> InterpreterSettings {
+	InterpreterSettings {
+		font_resolver: Arc::new(font_kit_font_resolver),
+		warning_sink: Arc::new(|_| {}),
+	}
+}
+
+fn font_kit_font_resolver(query: &FontQuery) -> Option<(FontData, u32)> {
+	if let Some((bytes, idx)) = resolve_with_font_kit(query) {
+		return Some((bytes, idx));
+	}
+	// Фоллбек на встроенные шрифты hayro:
+	match query {
+		FontQuery::Standard(s) => Some(s.get_font_data()),
+		FontQuery::Fallback(fb) => Some(fb.pick_standard_font().get_font_data()),
+	}
+}
+
+fn resolve_with_font_kit(query: &FontQuery) -> Option<(Arc<dyn AsRef<[u8]> + Send + Sync>, u32)> {
+	// ← создаём локально, никаких статиков
+	let system_fonts = SystemSource::new();
+
+	let (families, props) = match query {
+		FontQuery::Standard(std) => {
+			let (fam, wt, st) = families_for_standard(*std);
+			(fam, Properties { weight: wt, stretch: FkStretch::NORMAL, style: st })
+		}
+		FontQuery::Fallback(fb) => {
+			if let Some(name) =
+				fb.post_script_name.as_ref().or(fb.font_name.as_ref()).or(fb.font_family.as_ref())
+			{
+				let fams = vec![FamilyName::Title(name.clone())];
+				let wt = weight_from_u32(fb.font_weight, fb.is_bold);
+				let st = if fb.is_italic { FkStyle::Italic } else { FkStyle::Normal };
+				let stretch = hayro_stretch_to_font_kit(fb.font_stretch);
+				(fams, Properties { weight: wt, stretch, style: st })
+			} else {
+				let (fam, wt, st) = families_for_standard(fb.pick_standard_font());
+				(fam, Properties { weight: wt, stretch: FkStretch::NORMAL, style: st })
+			}
+		}
+	};
+
+	for fam in families {
+		let handle = system_fonts.select_best_match(&[fam], &props).ok()?;
+		if let Some((bytes, idx)) = bytes_from_handle(&handle) {
+			return Some((bytes, idx));
+		}
+	}
+	None
+}
+
+fn bytes_from_handle(handle: &Handle) -> Option<(Arc<dyn AsRef<[u8]> + Send + Sync>, u32)> {
+	match handle {
+		Handle::Path { path, font_index } => {
+			let data = std::fs::read(path).ok()?;
+			Some((Arc::new(data), *font_index))
+		}
+		Handle::Memory { bytes, font_index } => Some((bytes.clone(), *font_index)),
+	}
+}
+
+/// Маппинг стандартных 14 PDF-шрифтов к семействам font-kit + желаемые свойства.
+fn families_for_standard(sf: StandardFont) -> (Vec<FamilyName>, FkWeight, FkStyle) {
+	use StandardFont::*;
+	match sf {
+		// Times family
+		TimesRoman => (
+			vec![
+				FamilyName::Title("Times New Roman".into()),
+				FamilyName::Title("Times".into()),
+				FamilyName::Title("Liberation Serif".into()),
+			],
+			FkWeight::NORMAL,
+			FkStyle::Normal,
+		),
+		TimesItalic => (
+			vec![
+				FamilyName::Title("Times New Roman".into()),
+				FamilyName::Title("Times".into()),
+				FamilyName::Title("Liberation Serif".into()),
+			],
+			FkWeight::NORMAL,
+			FkStyle::Italic,
+		),
+		TimesBold => (
+			vec![
+				FamilyName::Title("Times New Roman".into()),
+				FamilyName::Title("Times".into()),
+				FamilyName::Title("Liberation Serif".into()),
+			],
+			FkWeight::BOLD,
+			FkStyle::Normal,
+		),
+		TimesBoldItalic => (
+			vec![
+				FamilyName::Title("Times New Roman".into()),
+				FamilyName::Title("Times".into()),
+				FamilyName::Title("Liberation Serif".into()),
+			],
+			FkWeight::BOLD,
+			FkStyle::Italic,
+		),
+
+		// Helvetica → Arial/Liberation Sans
+		Helvetica => (
+			vec![
+				FamilyName::Title("Helvetica".into()),
+				FamilyName::Title("Arial".into()),
+				FamilyName::Title("Liberation Sans".into()),
+			],
+			FkWeight::NORMAL,
+			FkStyle::Normal,
+		),
+		HelveticaOblique => (
+			vec![
+				FamilyName::Title("Helvetica".into()),
+				FamilyName::Title("Arial".into()),
+				FamilyName::Title("Liberation Sans".into()),
+			],
+			FkWeight::NORMAL,
+			FkStyle::Italic, // oblique ~ italic
+		),
+		HelveticaBold => (
+			vec![
+				FamilyName::Title("Helvetica".into()),
+				FamilyName::Title("Arial".into()),
+				FamilyName::Title("Liberation Sans".into()),
+			],
+			FkWeight::BOLD,
+			FkStyle::Normal,
+		),
+		HelveticaBoldOblique => (
+			vec![
+				FamilyName::Title("Helvetica".into()),
+				FamilyName::Title("Arial".into()),
+				FamilyName::Title("Liberation Sans".into()),
+			],
+			FkWeight::BOLD,
+			FkStyle::Italic,
+		),
+
+		// Courier → Courier New/Liberation Mono
+		Courier => (
+			vec![
+				FamilyName::Title("Courier New".into()),
+				FamilyName::Title("Courier".into()),
+				FamilyName::Title("Liberation Mono".into()),
+			],
+			FkWeight::NORMAL,
+			FkStyle::Normal,
+		),
+		CourierOblique => (
+			vec![
+				FamilyName::Title("Courier New".into()),
+				FamilyName::Title("Courier".into()),
+				FamilyName::Title("Liberation Mono".into()),
+			],
+			FkWeight::NORMAL,
+			FkStyle::Italic,
+		),
+		CourierBold => (
+			vec![
+				FamilyName::Title("Courier New".into()),
+				FamilyName::Title("Courier".into()),
+				FamilyName::Title("Liberation Mono".into()),
+			],
+			FkWeight::BOLD,
+			FkStyle::Normal,
+		),
+		CourierBoldOblique => (
+			vec![
+				FamilyName::Title("Courier New".into()),
+				FamilyName::Title("Courier".into()),
+				FamilyName::Title("Liberation Mono".into()),
+			],
+			FkWeight::BOLD,
+			FkStyle::Italic,
+		),
+
+		// Symbol & ZapfDingbats (названия могут отличаться на системах)
+		Symbol => (
+			vec![FamilyName::Title("Symbol".into()), FamilyName::Title("Standard Symbols PS".into())],
+			FkWeight::NORMAL,
+			FkStyle::Normal,
+		),
+		ZapfDingbats => (
+			vec![
+				FamilyName::Title("Zapf Dingbats".into()),
+				FamilyName::Title("ITC Zapf Dingbats".into()),
+			],
+			FkWeight::NORMAL,
+			FkStyle::Normal,
+		),
+	}
+}
+
+/// Вес из PDF-хинтов (fallback weight/flags) → font-kit Weight
+fn weight_from_u32(pdf_weight: u32, is_bold: bool) -> FkWeight {
+	if is_bold {
+		return FkWeight::BOLD;
+	}
+	// pdf_weight обычно 100..900; font-kit принимает непрерывный диапазон (0..1000).
+	// Нормализуем и ограничим.
+	let clamped = pdf_weight.min(1000) as f32;
+	FkWeight(clamped)
+}
+
+/// Hayro stretch → font-kit Stretch
+fn hayro_stretch_to_font_kit(s: HayroStretch) -> FkStretch {
+	use HayroStretch::*;
+	match s {
+		UltraCondensed => FkStretch::ULTRA_CONDENSED,
+		ExtraCondensed => FkStretch::EXTRA_CONDENSED,
+		Condensed => FkStretch::CONDENSED,
+		SemiCondensed => FkStretch::SEMI_CONDENSED,
+		Normal => FkStretch::NORMAL,
+		SemiExpanded => FkStretch::SEMI_EXPANDED,
+		Expanded => FkStretch::EXPANDED,
+		ExtraExpanded => FkStretch::EXTRA_EXPANDED,
+		UltraExpanded => FkStretch::ULTRA_CONDENSED,
 	}
 }
