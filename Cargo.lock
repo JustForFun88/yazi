@@ -5263,6 +5263,7 @@ dependencies = [
  "quantette",
  "ratatui",
  "scopeguard",
+ "smallvec",
  "tokio",
  "tracing",
  "yazi-config",
