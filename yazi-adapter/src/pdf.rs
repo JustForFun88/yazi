@@ -116,6 +116,7 @@ struct FileSignature {
 // }
 
 mod font_mem_source;
+mod fontique_src;
 
 use fontdb::{self, Family, Query, Stretch, Style, Weight};
 use hayro::{self, Pdf, RenderSettings, render};
