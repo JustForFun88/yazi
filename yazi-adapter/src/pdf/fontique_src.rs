@@ -1,8 +1,7 @@
-use std::sync::{Arc, LazyLock, Mutex, RwLock};
+use std::sync::{LazyLock, Mutex};
 
-use fontique::{Attributes, Collection, CollectionOptions, FontStyle, FontWeight, FontWidth, GenericFamily, QueryFamily, QueryStatus, SourceCache};
-use hayro::{self, Pdf, RenderSettings, render};
-use hayro_interpret::{self, InterpreterSettings, font::{FallbackFontQuery, FontData, FontQuery, FontStretch as HayroStretch, StandardFont}};
+use fontique::{Attributes, Collection, CollectionOptions, FontStyle, FontWeight, FontWidth, QueryFamily, QueryStatus, SourceCache};
+use hayro_interpret::{self, font::{FontData, FontQuery, FontStretch, StandardFont}};
 
 // ---------- Windows ----------
 #[cfg(target_family = "windows")]
@@ -51,47 +50,50 @@ pub static GLOBAL_SOURCE_CACHE: LazyLock<Mutex<SourceCache>> =
 
 /// fontique-based resolver for hayro
 fn fontique_font_resolver(hayro_query: &FontQuery) -> Option<(FontData, u32)> {
-	let mut collection = GLOBAL_FONT_COLLECTION.lock().ok()?;
-	let mut cache = GLOBAL_SOURCE_CACHE.lock().ok()?;
+	let mut out: Option<(FontData, u32)> = None;
+	{
+		let mut collection = GLOBAL_FONT_COLLECTION.lock().ok()?;
+		let mut cache = GLOBAL_SOURCE_CACHE.lock().ok()?;
 
-	let mut fontique_query = collection.query(&mut *cache);
+		let mut fontique_query = collection.query(&mut *cache);
 
-	match hayro_query {
-		FontQuery::Standard(std_font) => {
-			let (families, weight, style) = standard_font_query(*std_font);
-			fontique_query.set_families(families);
-			fontique_query.set_attributes(Attributes::new(FontWidth::NORMAL, style, weight));
-		}
-		FontQuery::Fallback(fallback_query) => {
-			if let Some(family) = &fallback_query.font_family {
-				fontique_query.set_families([family.as_str()]);
-				let weight = FontWeight::new(fallback_query.font_weight as f32);
-				let style = if fallback_query.is_italic { FontStyle::Italic } else { FontStyle::Normal };
-				fontique_query.set_attributes(Attributes::new(
-					convert_stretch(fallback_query.font_stretch),
-					style,
-					weight,
-				));
-			} else {
-				let (families, weight, style) = standard_font_query(fallback_query.pick_standard_font());
+		match hayro_query {
+			FontQuery::Standard(std_font) => {
+				let (families, weight, style) = standard_font_query(*std_font);
 				fontique_query.set_families(families);
-				fontique_query.set_attributes(Attributes::new(
-					convert_stretch(fallback_query.font_stretch),
-					style,
-					weight,
-				));
+				fontique_query.set_attributes(Attributes::new(FontWidth::NORMAL, style, weight));
+			}
+			FontQuery::Fallback(fallback_query) => {
+				if let Some(family) = &fallback_query.font_family {
+					fontique_query.set_families([family.as_str()]);
+					let weight = FontWeight::new(fallback_query.font_weight as f32);
+					let style = if fallback_query.is_italic { FontStyle::Italic } else { FontStyle::Normal };
+					fontique_query.set_attributes(Attributes::new(
+						convert_stretch(fallback_query.font_stretch),
+						style,
+						weight,
+					));
+				} else {
+					let (families, weight, style) = standard_font_query(fallback_query.pick_standard_font());
+					fontique_query.set_families(families);
+					fontique_query.set_attributes(Attributes::new(
+						convert_stretch(fallback_query.font_stretch),
+						style,
+						weight,
+					));
+				}
 			}
 		}
-	}
 
-	// Take the first acceptable match and return its bytes + TTC/collection index.
-	let mut out: Option<(FontData, u32)> = None;
-	fontique_query.matches_with(|candidate| {
-		// cand.blob contains shared font data; extract inner Arc without copying.
-		let (arc, _id) = candidate.blob.clone().into_raw_parts();
-		out = Some((arc, candidate.index));
-		QueryStatus::Stop
-	});
+		// Take the first acceptable match and return its bytes and TTC/collection
+		// index.
+		fontique_query.matches_with(|candidate| {
+			// Cand.blob contains shared font data, so cloning are cheap.
+			let (arc, _id) = candidate.blob.clone().into_raw_parts();
+			out = Some((arc, candidate.index));
+			QueryStatus::Stop
+		});
+	}
 
 	out.or_else(|| match hayro_query {
 		FontQuery::Standard(std_font) => Some(std_font.get_font_data()),
@@ -105,7 +107,7 @@ fn standard_font_query(
 ) -> (impl Iterator<Item = QueryFamily<'static>>, FontWeight, FontStyle) {
 	use StandardFont::*;
 	let (names, weight, style) = match std_font {
-		// Times family
+		// Times family -> allow also Liberation Serif
 		TimesRoman => (
 			[QueryFamily::Named(DEFAULT_TIMES), QueryFamily::Named("Liberation Serif")],
 			FontWeight::NORMAL,
@@ -127,7 +129,7 @@ fn standard_font_query(
 			FontStyle::Italic,
 		),
 
-		// Helvetica family → allow Arial/Liberation Sans
+		// Helvetica family → -> allow also Liberation Sans
 		Helvetica => (
 			[QueryFamily::Named(DEFAULT_HELVETICA), QueryFamily::Named("Liberation Sans")],
 			FontWeight::NORMAL,
@@ -149,7 +151,7 @@ fn standard_font_query(
 			FontStyle::Italic,
 		),
 
-		// Courier family → allow Courier New/Liberation Mono
+		// Courier family -> allow also Liberation Mono
 		Courier => (
 			[QueryFamily::Named(DEFAULT_COURIER), QueryFamily::Named("Liberation Mono")],
 			FontWeight::NORMAL,
@@ -171,14 +173,14 @@ fn standard_font_query(
 			FontStyle::Italic,
 		),
 
-		// Symbol / Zapf Dingbats (names vary by OS)
+		// Symbol / Zapf Dingbats
 		Symbol => (
 			[QueryFamily::Named(DEFAULT_SYMBOL), QueryFamily::Named("Standard Symbols PS")],
 			FontWeight::NORMAL,
 			FontStyle::Normal,
 		),
 		ZapfDingBats => (
-			[QueryFamily::Named(DEFAULT_ZAPF_DINGBATS), QueryFamily::Named("ITC Zapf Dingbats")],
+			[QueryFamily::Named(DEFAULT_ZAPF_DINGBATS), QueryFamily::Named("Wingdings")],
 			FontWeight::NORMAL,
 			FontStyle::Normal,
 		),
@@ -186,17 +188,17 @@ fn standard_font_query(
 	(names.into_iter(), weight, style)
 }
 
-/// Convert your Hayro stretch → fontique width
-fn convert_stretch(stretch: HayroStretch) -> FontWidth {
+/// Convert your Hayro stretch -> fontique width
+fn convert_stretch(stretch: FontStretch) -> FontWidth {
 	match stretch {
-		HayroStretch::UltraCondensed => FontWidth::ULTRA_CONDENSED, // 0.5
-		HayroStretch::ExtraCondensed => FontWidth::EXTRA_CONDENSED, // 0.625
-		HayroStretch::Condensed => FontWidth::CONDENSED,            // 0.75
-		HayroStretch::SemiCondensed => FontWidth::SEMI_CONDENSED,   // 0.875
-		HayroStretch::Normal => FontWidth::NORMAL,                  // 1.0
-		HayroStretch::SemiExpanded => FontWidth::SEMI_EXPANDED,     // 1.125
-		HayroStretch::Expanded => FontWidth::EXPANDED,              // 1.25
-		HayroStretch::ExtraExpanded => FontWidth::EXTRA_EXPANDED,   // 1.5
-		HayroStretch::UltraExpanded => FontWidth::ULTRA_EXPANDED,   // 2.0
+		FontStretch::UltraCondensed => FontWidth::ULTRA_CONDENSED, // 0.5
+		FontStretch::ExtraCondensed => FontWidth::EXTRA_CONDENSED, // 0.625
+		FontStretch::Condensed => FontWidth::CONDENSED,            // 0.75
+		FontStretch::SemiCondensed => FontWidth::SEMI_CONDENSED,   // 0.875
+		FontStretch::Normal => FontWidth::NORMAL,                  // 1.0
+		FontStretch::SemiExpanded => FontWidth::SEMI_EXPANDED,     // 1.125
+		FontStretch::Expanded => FontWidth::EXPANDED,              // 1.25
+		FontStretch::ExtraExpanded => FontWidth::EXTRA_EXPANDED,   // 1.5
+		FontStretch::UltraExpanded => FontWidth::ULTRA_EXPANDED,   // 2.0
 	}
 }
