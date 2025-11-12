@@ -1702,7 +1702,7 @@ dependencies = [
 [[package]]
 name = "hayro"
 version = "0.4.0"
-source = "git+https://github.com/LaurenzV/hayro.git?rev=f160d6dadc919e2b1cd2e8efe10ff65297c3b21b#f160d6dadc919e2b1cd2e8efe10ff65297c3b21b"
+source = "git+https://github.com/LaurenzV/hayro.git?rev=b239862e157fef9f4568a95fa036e65284b6022d#b239862e157fef9f4568a95fa036e65284b6022d"
 dependencies = [
  "bytemuck",
  "fast_image_resize",
@@ -1715,7 +1715,7 @@ dependencies = [
 [[package]]
 name = "hayro-common"
 version = "0.1.0"
-source = "git+https://github.com/LaurenzV/hayro.git?rev=f160d6dadc919e2b1cd2e8efe10ff65297c3b21b#f160d6dadc919e2b1cd2e8efe10ff65297c3b21b"
+source = "git+https://github.com/LaurenzV/hayro.git?rev=b239862e157fef9f4568a95fa036e65284b6022d#b239862e157fef9f4568a95fa036e65284b6022d"
 dependencies = [
  "smallvec",
 ]
@@ -1723,7 +1723,7 @@ dependencies = [
 [[package]]
 name = "hayro-font"
 version = "0.3.0"
-source = "git+https://github.com/LaurenzV/hayro.git?rev=f160d6dadc919e2b1cd2e8efe10ff65297c3b21b#f160d6dadc919e2b1cd2e8efe10ff65297c3b21b"
+source = "git+https://github.com/LaurenzV/hayro.git?rev=b239862e157fef9f4568a95fa036e65284b6022d#b239862e157fef9f4568a95fa036e65284b6022d"
 dependencies = [
  "log",
  "phf",
@@ -1732,7 +1732,7 @@ dependencies = [
 [[package]]
 name = "hayro-interpret"
 version = "0.4.0"
-source = "git+https://github.com/LaurenzV/hayro.git?rev=f160d6dadc919e2b1cd2e8efe10ff65297c3b21b#f160d6dadc919e2b1cd2e8efe10ff65297c3b21b"
+source = "git+https://github.com/LaurenzV/hayro.git?rev=b239862e157fef9f4568a95fa036e65284b6022d#b239862e157fef9f4568a95fa036e65284b6022d"
 dependencies = [
  "bitflags 2.10.0",
  "hayro-common",
@@ -1752,7 +1752,7 @@ dependencies = [
 [[package]]
 name = "hayro-jpeg2000"
 version = "0.1.0"
-source = "git+https://github.com/LaurenzV/hayro.git?rev=f160d6dadc919e2b1cd2e8efe10ff65297c3b21b#f160d6dadc919e2b1cd2e8efe10ff65297c3b21b"
+source = "git+https://github.com/LaurenzV/hayro.git?rev=b239862e157fef9f4568a95fa036e65284b6022d#b239862e157fef9f4568a95fa036e65284b6022d"
 dependencies = [
  "hayro-common",
  "log",
@@ -1761,7 +1761,7 @@ dependencies = [
 [[package]]
 name = "hayro-syntax"
 version = "0.4.0"
-source = "git+https://github.com/LaurenzV/hayro.git?rev=f160d6dadc919e2b1cd2e8efe10ff65297c3b21b#f160d6dadc919e2b1cd2e8efe10ff65297c3b21b"
+source = "git+https://github.com/LaurenzV/hayro.git?rev=b239862e157fef9f4568a95fa036e65284b6022d#b239862e157fef9f4568a95fa036e65284b6022d"
 dependencies = [
  "flate2",
  "hayro-common",

@@ -28,7 +28,7 @@ scopeguard  = { workspace = true }
 tokio       = { workspace = true }
 tracing     = { workspace = true }
 pdfium-render = { version = "0.8.35", features = ["sync"] }
-hayro = { git = "https://github.com/LaurenzV/hayro.git", rev = "a67c49d44701ef77670dc62bfec401d117b705eb" }
+hayro = { git = "https://github.com/LaurenzV/hayro.git", rev = "b239862e157fef9f4568a95fa036e65284b6022d" }
 fontique = { version = "0.6", features = ["system", "std"] }
 memmap2 = "0.9.9"
 color = "0.3.2"
