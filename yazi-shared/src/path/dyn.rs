@@ -66,9 +66,11 @@ impl<'p> PathLike<'p> for PathDyn<'p> {
 	}
 
 	fn file_stem(self) -> Option<Self::Inner> {
-		Some(match self {
-			Self::Os(p) => p.file_stem()?.as_encoded_bytes(),
-		})
+		let file_stem = match self {
+			Self::Os(p) if p.is_dir() => p.file_name()?,
+			Self::Os(p) => p.file_stem()?,
+		};
+		Some(file_stem.as_encoded_bytes())
 	}
 
 	// FIXME: remove

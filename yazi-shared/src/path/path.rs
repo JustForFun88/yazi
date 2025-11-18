@@ -67,7 +67,9 @@ impl<'p> PathLike<'p> for &'p std::path::Path {
 
 	fn file_name(self) -> Option<Self::Inner> { self.file_name() }
 
-	fn file_stem(self) -> Option<Self::Inner> { self.file_stem() }
+	fn file_stem(self) -> Option<Self::Inner> {
+		if self.is_dir() { self.file_name() } else { self.file_stem() }
+	}
 
 	unsafe fn from_encoded_bytes(bytes: &'p [u8]) -> Self {
 		std::path::Path::new(unsafe { std::ffi::OsStr::from_encoded_bytes_unchecked(bytes) })
