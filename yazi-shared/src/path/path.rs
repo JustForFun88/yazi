@@ -114,7 +114,9 @@ impl<'p> PathLike<'p> for &'p std::path::Path {
 
 	fn parent(self) -> Option<Self> { self.parent() }
 
-	fn stem(self) -> Option<Self::Strand<'p>> { self.file_stem() }
+	fn stem(self) -> Option<Self::Strand<'p>> {
+		if self.is_dir() { self.file_name() } else { self.file_stem() }
+	}
 
 	fn try_ends_with<'a, T>(self, child: T) -> Result<bool, EndsWithError>
 	where

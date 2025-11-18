@@ -125,9 +125,11 @@ impl<'p> PathLike<'p> for PathDyn<'p> {
 	}
 
 	fn stem(self) -> Option<Self::Strand<'p>> {
-		Some(match self {
-			Self::Os(p) => p.file_stem()?.into(),
-		})
+		let stem = match self {
+			Self::Os(p) if p.is_dir() => p.file_name(),
+			Self::Os(p) => p.file_stem(),
+		};
+		stem.map(Into::into)
 	}
 
 	fn try_ends_with<'a, T>(self, child: T) -> Result<bool, EndsWithError>
